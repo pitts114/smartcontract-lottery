@@ -9,7 +9,7 @@ dependencies:
 dotenv: .env
 networks:
   default: development # defaults to development when unspecified
-  developmwnt:
+  development:
     verify: false
   ganache-local:
     verify: false

@@ -4,9 +4,10 @@ pragma solidity ^0.6.6;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.6/vendor/SafeMathChainlink.sol";
+import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Lottery is Ownable {
+contract Lottery is VRFConsumerBase, Ownable {
     using SafeMathChainlink for uint256;
 
     address payable[] public players;
@@ -19,9 +20,28 @@ contract Lottery is Ownable {
     // mapping(address => uint256) public addressToAmountFunded;
     uint256 public usdEntryFee = 50 * 10**18;
     AggregatorV3Interface internal ethUsdPriceFeed;
+    uint256 public fee;
+    bytes32 public keyhash;
+    address payable public recentWinner;
+    uint256 public randomness;
 
-    constructor(address _priceFeed) public {
+    constructor(
+        address _priceFeed,
+        address _vrfCoordinator,
+        address _link,
+        uint256 _fee,
+        bytes32 _keyhash
+    )
+        public
+        VRFConsumerBase(
+            _vrfCoordinator, // 0xb3dCcb4Cf7a26f6cf6B120Cf5A73875B7BBc655B, // VRF Coordinator
+            _link // 0x01BE23585060835E02B77ef475b0Cc51aA1e0709 // LINK
+        )
+    {
         ethUsdPriceFeed = AggregatorV3Interface(_priceFeed);
+        lottery_state = LOTTERY_STATE.CLOSED;
+        fee = _fee;
+        keyhash = _keyhash;
     }
 
     function enter() public payable {
@@ -70,5 +90,24 @@ contract Lottery is Ownable {
             "The lottery is not open!"
         );
         lottery_state = LOTTERY_STATE.CALCULATING_WINNER;
+
+        bytes32 requestId = requestRandomness(keyhash, fee);
+    }
+
+    function fulfillRandomness(bytes32 _requestId, uint256 _randomness)
+        internal
+        override
+    {
+        require(
+            lottery_state == LOTTERY_STATE.CALCULATING_WINNER,
+            "You aren't there yet!"
+        );
+        require(_randomness > 0, "random-not-found");
+        uint256 indexOfWinner = _randomness % players.length;
+        address payable winner = players[indexOfWinner];
+        recentWinner = winner;
+        recentWinner.transfer(address(this).balance);
+        players = new address payable[](0);
+        randomness = _randomness;
     }
 }
