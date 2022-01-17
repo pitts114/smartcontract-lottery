@@ -4,6 +4,7 @@ from scripts.helpful_scripts import (
     fund_with_link,
     STARTING_PRICE,
     LOCAL_BLOCKCHAIN_ENVIRONMENTS,
+    get_contract,
 )
 from scripts.deploy import deploy_lottery
 from web3 import Web3
@@ -75,4 +76,16 @@ def test_can_pick_winner_correctly():
 
     fund_with_link(lottery.address, account=account)
 
-    lottery.endLottery({"from": account})
+    account_starting_balance = account.balance()
+    lottery_balance = lottery.balance()
+
+    transaction = lottery.endLottery({"from": account})
+    request_id = transaction.events["RequestedRandomness"]["requestId"]
+    STATIC_RND = 777
+    get_contract("vrf_coordinator").callBackWithRandomness(
+        request_id, STATIC_RND, lottery.address, {"from": account}
+    )
+
+    assert lottery.recentWinner() == account
+    assert lottery.balance() == 0
+    assert account.balance() == account_starting_balance + lottery_balance
