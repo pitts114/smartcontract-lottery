@@ -14,7 +14,7 @@ FORKED_LOCAL_ENVIRONMENTS = ["mainnet-fork", "mainnet-fork-dev"]
 LOCAL_BLOCKCHAIN_ENVIRONMENTS = ["development", "ganache-local"]
 
 DECIMALS = 8
-STARTING_PRICE = 400000000000
+STARTING_PRICE = 400000000000  # 4000.00000000
 
 
 def get_account(index=None, id=None):
