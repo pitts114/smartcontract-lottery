@@ -78,8 +78,8 @@ contract Lottery is VRFConsumerBase, Ownable {
 
     function startLottery() public {
         require(
-            lottery_state == LOTTERY_STATE.OPEN,
-            "The lottery is already open!"
+            lottery_state == LOTTERY_STATE.CLOSED,
+            "The lottery is not closed!"
         );
         lottery_state = LOTTERY_STATE.OPEN;
     }

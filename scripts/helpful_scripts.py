@@ -6,6 +6,7 @@ from brownie import (
     config,
     network,
     Contract,
+    interface,
 )
 from web3 import Web3
 
@@ -26,7 +27,7 @@ def get_account(index=None, id=None):
         or network.show_active() in FORKED_LOCAL_ENVIRONMENTS
     ):
         return accounts[0]
-    return accounts.add(config["wallets"]["from_key"])
+    return accounts.load("development-exposed")
 
 
 def deploy_mocks(decimals=DECIMALS, starting_price=STARTING_PRICE):
@@ -71,3 +72,16 @@ def get_contract(contract_name):
             contract_type._name, contract_address, contract_type.abi
         )
     return contract
+
+
+def fund_with_link(
+    contract_address, account=None, link_token=None, amount=100000000000000000
+):  # 0.1 Link
+    account = account if account else get_account()
+    link_token = link_token if link_token else get_contract("link_token")
+    txn = interface.LinkTokenInterface(link_token.address).transfer(
+        contract_address, amount, {"from": account}
+    )
+    txn.wait(1)
+    print("Find contract!")
+    return txn
