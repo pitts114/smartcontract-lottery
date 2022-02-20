@@ -111,5 +111,6 @@ contract Lottery is VRFConsumerBase, Ownable {
         recentWinner.transfer(address(this).balance);
         players = new address payable[](0);
         randomness = _randomness;
+        lottery_state = LOTTERY_STATE.CLOSED;
     }
 }

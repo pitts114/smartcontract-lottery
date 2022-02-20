@@ -63,6 +63,27 @@ def test_can_end_lottery():
     assert lottery.lottery_state() == 2
 
 
+def test_can_start_after_randomness_fulfilled():
+    if network.show_active() not in LOCAL_BLOCKCHAIN_ENVIRONMENTS:
+        pytest.skip("Only run this test on local blockchain")
+
+    lottery = deploy_lottery()
+    account = get_account()
+    lottery.startLottery({"from": account})
+    assert lottery.lottery_state() == 0
+    lottery.enter({"from": account, "value": lottery.getEntranceFee()})
+    fund_with_link(lottery.address, account=account)
+    transaction = lottery.endLottery({"from": account})
+    assert lottery.lottery_state() == 2
+    request_id = transaction.events["RequestedRandomness"]["requestId"]
+    STATIC_RND = 777
+    get_contract("vrf_coordinator").callBackWithRandomness(
+        request_id, STATIC_RND, lottery.address, {"from": account}
+    )
+    lottery.startLottery({"from": account})
+    assert lottery.lottery_state() == 0
+
+
 def test_can_pick_winner_correctly():
     if network.show_active() not in LOCAL_BLOCKCHAIN_ENVIRONMENTS:
         pytest.skip("Only run this test on local blockchain")
